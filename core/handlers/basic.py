@@ -1,7 +1,10 @@
 from aiogram import Bot
 from aiogram.types import Message
 from aiogram.utils.formatting import Text, Bold
+
+from core.keyboards.admin_kb import reply_admin_start
 from core.keyboards.reply import reply_keyboard_start
+from core.settings import settings
 
 
 async def command_start_handler(message: Message, bot: Bot) -> None:
@@ -10,9 +13,10 @@ async def command_start_handler(message: Message, bot: Bot) -> None:
         "Hello, ",
         Bold(message.from_user.first_name)
     )
-    await message.answer(
-        **content.as_kwargs(), reply_markup=reply_keyboard_start
-    )
+    if message.from_user.id == settings.bots.chef_id:
+        await message.answer(**content.as_kwargs(), reply_markup=reply_admin_start)
+    else:
+        await message.answer(**content.as_kwargs(), reply_markup=reply_keyboard_start)
 
 
 async def create_order(message: Message, bot: Bot) -> None:

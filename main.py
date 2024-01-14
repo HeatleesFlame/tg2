@@ -1,9 +1,11 @@
 from aiogram import Dispatcher, Bot, F, Router
 from aiogram.enums import ParseMode
+
+from core.FSMs.admin_FSMs import FillMenu
 from core.db_bridge.querries import engine
 from core.db_bridge.models import Base
 from core.handlers.basic import command_start_handler, create_order, remove_order, order_delivered, non_supported
-from core.handlers.admin_handlers import admin_start, fill_menu
+from core.handlers.admin_handlers import admin_start, ask_menu, end_fill_menu, get_menu
 from core.middleware.md_basic import register_check
 import asyncio
 from core.settings import settings
@@ -35,11 +37,15 @@ async def start():
     dp = Dispatcher()
 
     dp.update.outer_middleware(register_check)
-    dp.message.register(fill_menu, F.text == 'Заполнить меню')
-    dp.message.register(admin_start, F.from_user.id == settings.bots.chef_id)
     # dp.startup.register(start_bot)
     # dp.shutdown.register(stop_bot)
+
     dp.message.register(command_start_handler, Command(commands=['start']))
+    # admin handler registry
+    dp.message.register(ask_menu, F.text == 'Заполнить меню')
+    dp.message.register(end_fill_menu, F.text == 'Отправить меню', FillMenu.filling)
+    dp.message.register(get_menu, FillMenu.filling)
+    # user handler registry
     dp.message.register(create_order, F.text == 'Сделать заказ')
     dp.message.register(remove_order, F.text == 'Отменить заказ')
     dp.message.register(order_delivered, F.text == 'Заказ получен')
