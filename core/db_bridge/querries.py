@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, create_async_engine
 from core.db_bridge.models import User
@@ -19,3 +21,9 @@ async def check(identy) -> bool:
         stmt = select(User.id).where(User.id == identy)
         result = await session.execute(stmt)
         return bool(result.first())
+
+
+async def user_list() -> Iterable:
+    async with async_session() as session:
+        result = await session.execute(select(User.id))
+        return result
