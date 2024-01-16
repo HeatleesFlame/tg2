@@ -1,5 +1,4 @@
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.fsm.context import FSMContext
 
 
 class FillMenu(StatesGroup):
@@ -8,3 +7,9 @@ class FillMenu(StatesGroup):
 
 class SendMenuPhoto(StatesGroup):
     sending_photo = State()
+
+
+class CreateOrder(StatesGroup):
+    choosing_dishes = State()
+    choosing_time = State()
+    sending_order = State()

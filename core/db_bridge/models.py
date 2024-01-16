@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import List
 from sqlalchemy.orm import DeclarativeBase, relationship, Mapped
 from sqlalchemy import Column, String, Integer, BigInteger, DateTime, Time, ForeignKey, Table
+from sqlalchemy.sql import func
 
 
 class Base(DeclarativeBase):
@@ -39,10 +40,10 @@ class User(Base):
 class Pricing(Base):
     __tablename__ = 'pricing'
     id = Column(Integer, primary_key=True)
-    dish = Column(String(30))
+    dish_name = Column(String(30))
     price = Column(Integer, nullable=False)
 
-    orders: Mapped[List[Order]] = relationship(secondary=association_table, back_populates='pricing')
+    orders: Mapped[List[Order]] = relationship(secondary=association_table, back_populates='pricing', cascade='all, delete')
 
 
 class Order(Base):
@@ -50,9 +51,9 @@ class Order(Base):
 
     order_id = Column(Integer, primary_key=True)
     customer = Column(ForeignKey('users.id'))
-    create_date = Column(DateTime, nullable=False)
+    create_date = Column(DateTime, server_default=func.now())
     price = Column(Integer)
-    delivery_time = Column(Time, nullable=False)
+    delivery_time = Column(String(6))
     status = Column(String(10), nullable=False)
 
     pricing: Mapped[List[Pricing]] = relationship(secondary=association_table, back_populates='orders')
