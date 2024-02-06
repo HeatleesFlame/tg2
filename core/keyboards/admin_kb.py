@@ -7,15 +7,9 @@ reply_admin_start = ReplyKeyboardMarkup(keyboard=[
             text='Отправить фото меню'
             ),
         KeyboardButton(
-            text='Заполнить меню'
-        ),
+            text='Получить ссылку на таблицы'
+        )
     ]], resize_keyboard=True,
+        one_time_keyboard=True
 )
 
-fill_menu_kb = ReplyKeyboardMarkup(keyboard=[
-    [
-        KeyboardButton(
-            text='Отправить меню'
-        )
-    ]
-])

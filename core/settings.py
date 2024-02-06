@@ -6,7 +6,7 @@ r"""
 к настройкам из основного потока
 -settings создает экземпляр класса Settings, с которым работает основная программа
 """
-
+from __future__ import annotations
 from environs import Env
 from dataclasses import dataclass
 import os
@@ -20,15 +20,21 @@ class Bots:
 
 
 @dataclass
-class Databases:
-    db_passwd: str
-    db_login: str
+class Redis:
+    user_name: str
+    passwd: str
+
+
+@dataclass
+class GoogleApi:
+    spreadsheet_id: str
 
 
 @dataclass
 class Settings:
     bots: Bots
-    databases: Databases
+    redis: Redis
+    google_api: GoogleApi
 
 
 def get_settings(path: str):
@@ -40,9 +46,12 @@ def get_settings(path: str):
             admin_id=env.int('ADMIN_ID'),
             chef_id=env.int('CHEF_ID')
         ),
-        databases=Databases(
-            db_passwd=env.str('DB_PASSWD'),
-            db_login=env.str('DB_LOGIN')
+        redis=Redis(
+            user_name=env.str('REDIS_USER'),  # configure redis client later
+            passwd=env.str('REDIS_PASSWD')
+        ),
+        google_api=GoogleApi(
+            spreadsheet_id=env.str('SPREADSHEET_ID')
         )
     )
 

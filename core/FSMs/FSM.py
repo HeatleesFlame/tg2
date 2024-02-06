@@ -12,4 +12,6 @@ class SendMenuPhoto(StatesGroup):
 class CreateOrder(StatesGroup):
     choosing_dishes = State()
     choosing_time = State()
+    choosing_beverage = State()
     sending_order = State()
+    write_wishes = State()

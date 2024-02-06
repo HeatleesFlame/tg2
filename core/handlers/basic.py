@@ -1,20 +1,24 @@
+import logging
+import re
+from typing import Union
+from aiogram.types import CallbackQuery
 from aiogram import Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from aiogram.utils.formatting import Text, Bold
-from memory_profiler import profile
 from core.FSMs.FSM import CreateOrder
-from core.db_bridge.models import Order
-from core.db_bridge.querries import commit_order, get_one_dish
 from core.keyboards.admin_kb import reply_admin_start
-from core.keyboards.user_kb import reply_keyboard_start, build_menu, delete_button, choose_time_kb, send_order_kb
+from core.keyboards.user_kb import reply_keyboard_start, choose_time_kb, send_order_kb, menu_kb, beverage_kb, \
+    complex_dinner, wishes_kb, user_home, delete_button
+from core.redis_bridge.redis_bridge import redis_storage
 from core.settings import settings
+from core.sheets_bridge.core_scripts import commit_order
 
 
 async def command_start_handler(message: Message, bot: Bot) -> None:
     """handle the command start event and say hello to user"""
     content = Text(
-        "Hello, ",
+        "Привет, ",
         Bold(message.from_user.first_name)
     )
     if message.from_user.id == settings.bots.chef_id:
@@ -24,68 +28,134 @@ async def command_start_handler(message: Message, bot: Bot) -> None:
 
 
 async def create_order(message: Message, bot: Bot, state: FSMContext) -> None:
-    keyboard = await build_menu()
-    await message.answer('Нажмите на блюдо, которое хотели бы заказать\nКогда закончите, напишите Отправить заказ',
-                         reply_markup=keyboard)
-    order = Order(customer=message.from_user.id, status='Создан')
-    await state.set_state(CreateOrder.choosing_dishes)
-    await state.update_data(order=order, keyboard=keyboard)
+    if await redis_storage.get(f'{message.from_user.id}_order'):
+        await message.answer('У вас уже есть активный заказ, вы сможете сделать новый когда отправят меню', reply_markup=user_home)
+    else:
+        await state.set_state(CreateOrder.choosing_dishes)
+        await message.answer('Нажмите на обед, который хотите заказать', reply_markup=complex_dinner)
+        await message.answer('Также вы можете собрать обед самостоятельно', reply_markup=menu_kb)
+        await state.set_data(
+            {
+                'order': {
+                    'customer': str(message.from_user.id),
+                    'content': '',
+                    'delivery_time': '',
+                    'wishes': ''
+                }
+            }
+        )
 
 
-async def get_order_entity(message: Message, bot: Bot, state: FSMContext) -> None:
-    # TODO реализовать обработку некорректного ввода
-    # TODO реализовать удаление выбранных позиций меню из клавиатуры
-    dish_id, dish_name = message.text.split('.')  # получаем айди товара и название
-    dish_id = int(dish_id)
-
-    # if dish_name in [dish.dish_name for dish in await get_dishes()]:  # may cause performance issues
-    user_data = await state.get_data()  # получаем данные из фсм
-
-    dish = await get_one_dish(dish_id)  # загружаем товар из бд
-    user_data['order'].pricing.append(dish)  # добавляем к заказу
-
-    new_keyboard = await delete_button(user_data['keyboard'], identy=dish_id)  # удаляем кнопку с товаром
-    await message.answer('Принял', reply_markup=new_keyboard)
-
-    await state.update_data()
-    # else:
-    #   await message.answer('Вы указали блюдо неверно\nЕсли ошибки нет, обратитесь к администратору')
-
-
-async def ask_time(message: Message, bot: Bot, state: FSMContext) -> None:
-    await state.set_state(CreateOrder.choosing_time)
-    await message.answer('Выберите время', reply_markup=choose_time_kb)
-
-
-async def get_time(message: Message, bot: Bot, state: FSMContext):
+async def complete_dinner(callback: CallbackQuery, state: FSMContext) -> None:
     user_data = await state.get_data()
     order = user_data['order']
-    order.delivery_time = message.text
+
+    match callback.data:
+        case 'complex_1':
+            order['content'] += 'Суп Второе Салат Хлеб '
+        case 'complex_2':
+            order['content'] += 'Суп Второе Хлеб '
+        case 'complex_3':
+            order['content'] += 'Второе Салат Хлеб '
+
     await state.update_data(order=order)
-    await state.set_state(CreateOrder.sending_order)
-    await message.answer('Записал', reply_markup=send_order_kb)
+    await callback.message.answer('Записал. Выберите напиток, если его нет в клавиатуре, просто напишите', reply_markup=beverage_kb)
+    await state.set_state(CreateOrder.choosing_beverage)
 
 
-async def send_order(message: Message, bot: Bot, state: FSMContext) -> None:  # TODO оптимизировать процесс создания заказа и реализовать расчет его стоимости с учетом скидки если попадает под опредленный шаблон
+async def get_dish(message: Message, bot: Bot, state: FSMContext) -> None:
+    if message.text in ["Суп", "Салат", "Второе"]:
+        user_data = await state.get_data()
+        user_data['order']['content'] += f'{message.text} '
+        await state.update_data(data=user_data)
+        new_kb = await delete_button(keyboard=menu_kb, already_pressed=user_data['order']['content'])
+        await message.answer('Записал', reply_markup=new_kb)
+    else:
+        await message.answer(f'Я вас не совсем понимаю, вы правда хотели заказать {message.text}?)')
+
+
+async def ask_drink(message: Message, bot: Bot, state: FSMContext) -> None:
+    await message.answer('Выберите напиток, если его нет в клавиатуре, просто напишите', reply_markup=beverage_kb)
+    await state.set_state(CreateOrder.choosing_beverage)
+
+
+async def get_drink(message: Message, bot: Bot, state: FSMContext) -> None:
     user_data = await state.get_data()
-    await commit_order(user_data['order'])
-    await message.answer("Заказ отправлен")
+    user_data['order']['content'] += f'{message.text} '
+    await state.update_data(user_data)
+    await state.set_state(CreateOrder.choosing_time)
+    await message.answer('Записал, когда хотите получить заказ?', reply_markup=choose_time_kb)
+
+
+async def get_time(message: Message, bot: Bot, state: FSMContext) -> None:
+    if re.fullmatch(string=message.text, pattern='\d\d:\d\d'):  # noqa
+        user_data = await state.get_data()
+        user_data['order']['delivery_time'] += message.text
+        await state.update_data(user_data)
+        await state.set_state(CreateOrder.write_wishes)
+        await message.answer('Записал, есть какие-нибудь пожелания к заказу', reply_markup=wishes_kb)
+    else:
+        await message.answer('Не время, друх, не время...')
+
+
+async def get_wishes(message: Message, bot: Bot, state: FSMContext) -> None:
+    if message.text != 'Нет, спасибо!':
+        reply_text = 'Мы уже учли ваши пожелания!'
+        user_data = await state.get_data()
+        user_data['order']['wishes'] += message.text
+        await state.update_data(user_data)
+    else:
+        reply_text = 'Пора отправлять заказ, или отменить - (/cancel)'
+    await state.set_state(CreateOrder.sending_order)
+    await message.answer(reply_text, reply_markup=send_order_kb)
+
+
+async def send_order(message: Message, bot: Bot, state: FSMContext) -> None:
+    user_data = await state.get_data()
+    content = user_data['order']['content']
+    delivery_time = user_data['order']['delivery_time']
+    wishes = user_data['order']['wishes']
+    await message.answer(f'Заказ отправлен:\n{content}\nВремя выдачи:\n{delivery_time}\nПожелания к заказу:\n{wishes}', reply_markup=user_home)
+    user_data = user_data['order']
+    await redis_storage.set(f'{message.from_user.id}_order', '1')
+    # build order representation as sheets values
+    values = [[]]
+    for key in user_data.keys():
+        values[0].append(user_data[key])
+    await commit_order(order=values)
     await state.clear()
 
 
-async def remove_order(message: Message, bot: Bot) -> None:
-    """Обрабатывает отмену заказа до указанного времени и обновляет статус в БД"""
+async def remove_order(message: Message, bot: Bot, state: FSMContext) -> None:
+    user_id = message.from_user.id
+    await state.set_data({})
+    await redis_storage.delete(f'{user_id}_order')
     await bot.send_message(chat_id=settings.bots.chef_id,
-                           text='Заказ номер ХХХ был отменен')  # TODO реализовать удаление записи о заказе из базы данных а также наложить ограничения на отмену
-    await message.answer('Ваш заказ был отменен, мы уже сообщили об этом')
+                           text=f'Заказ номер {user_id} был отменен')  # search is inconvenient for users
+    await message.answer('Ваш заказ был отменен, мы уже сообщили об этом', reply_markup=reply_keyboard_start)
     pass
 
 
 async def order_delivered(message: Message, bot: Bot) -> None:
-    "Обновляет статус заказа и завершает его"
+    """Обновляет статус заказа и завершает его"""
+    # function not used in current version but kept for pay from credit card
     pass
+
+
+async def cancel(message: Message, bot: Bot, state: FSMContext) -> None:
+    current_state = await state.get_state()
+    if current_state is None:
+        await message.answer('Нечего отменять')
+        return
+    else:
+        logging.info('Action has cancelled ')
+        await state.clear()
+        if message.from_user.id != settings.bots.chef_id:
+            await message.answer('Действие отменено', reply_markup=reply_keyboard_start)
+        else:
+            await message.answer('Действие отмено', reply_markup=reply_admin_start)
 
 
 async def non_supported(message: Message, bot: Bot) -> None:
     """Обрабатывает все события, не полученные другими хендлерами"""
-    await message.answer('Function not supported')
+    await message.answer('Не совсем понимаю о чем вы(')

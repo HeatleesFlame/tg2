@@ -4,26 +4,30 @@
 -register_check получает айди пользователя и проверяет наличие записи о нем в БД
 """
 
-
 from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware
+from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import TelegramObject, Message, Update
-from core.db_bridge.querries import check
+from core.settings import settings
+from core.redis_bridge.redis_bridge import redis_storage
+from core.sheets_bridge.core_scripts import get_user
 
 
 async def register_check(
         handler: Callable[[Update, Dict[str, Any]], Awaitable[Any]],
         event: Update,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
 ) -> Any:
     """
     функция обрабатывает каждый апдейп поступивший от сервера
     и проверяет регистрацию отправившего его пользователя
 
     """
-
-    if await check(identy=data['event_from_user'].id):  # we check if user is registered
-        return await handler(event, data)
+    if not await redis_storage.get(str(data['event_from_user'].id)):
+        if await get_user(data['event_from_user'].id):
+            await redis_storage.set(str(data['event_from_user'].id), 'login')  # may overload sheets api if service attacked probably it configure good CI|CD to fix this fast
+            return await handler(event, data)
+        else:
+            await event.message.answer('Тебя нет в табличке, запишись!')
     else:
-        await event.message.answer('you are not registered')  # if user isn't registered we drop update
-        return
+        return await handler(event, data)
