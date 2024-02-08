@@ -16,7 +16,7 @@ services:
       - ./.env
     restart: on-failure
     ports:
-      - "6380:6379"
+      - "6379:6379"
   bot:
     build: .
     command: sh -c "python3 /app/main.py"
@@ -25,7 +25,10 @@ services:
     restart: always
     depends_on:
       - redis
-
+    ports:
+      - "80:80"
+    links:
+      - redis
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to

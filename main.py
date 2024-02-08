@@ -28,10 +28,7 @@ async def stop_bot(bot: Bot) -> None:
 
 @profile
 async def start():
-    logging.basicConfig(level=logging.INFO,
-                        filename='logs.log',
-                        filemode='w'
-                        )
+    logging.basicConfig(level=logging.INFO)
     storage = RedisStorage(redis=redis_storage)
     bot = Bot(settings.bots.bot_token, parse_mode=ParseMode.HTML)
     dp = Dispatcher(storage=storage)
