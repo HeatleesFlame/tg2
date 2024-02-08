@@ -23,6 +23,7 @@ class Bots:
 class Redis:
     user_name: str
     passwd: str
+    addr: str
 
 
 @dataclass
@@ -48,7 +49,8 @@ def get_settings(path: str):
         ),
         redis=Redis(
             user_name=env.str('REDIS_USER'),  # configure redis client later
-            passwd=env.str('REDIS_PASSWD')
+            passwd=env.str('REDIS_PASSWD'),
+            addr=env.str('REDIS_ADDR')
         ),
         google_api=GoogleApi(
             spreadsheet_id=env.str('SPREADSHEET_ID')

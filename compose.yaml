@@ -16,15 +16,27 @@ services:
       - ./.env
     restart: on-failure
     ports:
-      - "6380:6379"
+      - "6390:6379"
+    networks:
+      broadcast:
+        ipv4_address: 192.168.238.1
   bot:
-    build: .
+    build:
+      context: .
     command: sh -c "python3 /app/main.py"
     env_file:
       - ./.env
     restart: always
+    ports:
+      - "80:80"
     depends_on:
       - redis
+networks:
+  broadcast:
+    ipam:
+      driver: default
+      config:
+        -   subnet: "192.168.238.0/24"
 
 
 # The commented out section below is an example of how to define a PostgreSQL
