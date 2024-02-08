@@ -1,11 +1,12 @@
 import logging
 import re
-from typing import Union
-from aiogram.types import CallbackQuery
+
 from aiogram import Bot
 from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery
 from aiogram.types import Message
 from aiogram.utils.formatting import Text, Bold
+
 from core.FSMs.FSM import CreateOrder
 from core.keyboards.admin_kb import reply_admin_start
 from core.keyboards.user_kb import reply_keyboard_start, choose_time_kb, send_order_kb, menu_kb, beverage_kb, \
@@ -136,10 +137,10 @@ async def remove_order(message: Message, bot: Bot, state: FSMContext) -> None:
     pass
 
 
-async def order_delivered(message: Message, bot: Bot) -> None:
-    """Обновляет статус заказа и завершает его"""
-    # function not used in current version but kept for pay from credit card
-    pass
+# async def order_delivered(message: Message, bot: Bot) -> None:
+#     """Обновляет статус заказа и завершает его"""
+#     # function not used in current version but kept for pay from credit card
+#     pass
 
 
 async def cancel(message: Message, bot: Bot, state: FSMContext) -> None:

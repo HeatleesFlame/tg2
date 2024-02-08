@@ -5,10 +5,9 @@
 """
 
 from typing import Any, Awaitable, Callable, Dict
-from aiogram import BaseMiddleware
-from aiogram.fsm.storage.redis import RedisStorage
-from aiogram.types import TelegramObject, Message, Update
-from core.settings import settings
+
+from aiogram.types import Update
+
 from core.redis_bridge.redis_bridge import redis_storage
 from core.sheets_bridge.core_scripts import get_user
 

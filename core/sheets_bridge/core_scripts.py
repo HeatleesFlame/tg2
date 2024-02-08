@@ -1,11 +1,7 @@
 import json
-import asyncio
 import logging
 from typing import List
-
 from memory_profiler import profile
-
-from core.redis_bridge.redis_bridge import redis_storage
 from aiogoogle import Aiogoogle, GoogleAPI
 from aiogoogle.auth.creds import ServiceAccountCreds
 from core.settings import settings
@@ -17,7 +13,7 @@ creds = ServiceAccountCreds(
     scopes=[
         "https://www.googleapis.com/auth/devstorage.read_only",
         "https://www.googleapis.com/auth/devstorage.read_write",
-        "https://www.googleapis.com/auth/devstorage.full_control",  
+        "https://www.googleapis.com/auth/devstorage.full_control",
         "https://www.googleapis.com/auth/cloud-platform.read-only",
         "https://www.googleapis.com/auth/cloud-platform",
         "https://www.googleapis.com/auth/drive",
