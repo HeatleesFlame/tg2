@@ -72,10 +72,11 @@ async def list_users():
 
 async def commit_order(order: List[List[str]]) -> None:
     sheets = await create_api(name='sheets', version='v4')
+    order[0].append('=TODAY()')
     async with Aiogoogle(service_account_creds=creds) as aiogoogle:
         response = await aiogoogle.as_service_account(sheets.spreadsheets.values.append(
             spreadsheetId=spreadsheet_id,
-            range='orders!A2:D',
+            range='orders!A2:E',
             valueInputOption="USER_ENTERED",
             insertDataOption="INSERT_ROWS",
             json={
@@ -95,9 +96,24 @@ async def commit_order(order: List[List[str]]) -> None:
 async def clear_order_table() -> None:
     sheets = await create_api(name='sheets', version='v4')
     async with Aiogoogle(service_account_creds=creds) as aiogoogle:
-        response = await aiogoogle.as_service_account(sheets.spreadsheets.values.clear(
-            spreadsheetId=spreadsheet_id,
-            range='orders!A2:D'
-        ))
-    if response:
-        logging.info(msg='order table successfully deleted')
+        values = await aiogoogle.as_service_account(
+            sheets.spreadsheets.values.get(
+                spreadsheetId=spreadsheet_id,
+                range="orders!A2:E",
+                majorDimension="ROWS")
+        )
+        values = values['values']
+        await aiogoogle.as_service_account(
+            sheets.spreadsheets.values.append(
+                spreadsheetId=spreadsheet_id,
+                range="allorders!A2:E",
+                json={
+                    "majorDimension": "ROWS",
+                    "values": values
+                },
+                valueInputOption="USER_ENTERED",
+                insertDataOption="INSERT_ROWS",
+            )
+        )
+        await aiogoogle.as_service_account(
+            sheets.spreadsheets.values.clear(spreadsheetId=spreadsheet_id, range="orders!A2:E"))

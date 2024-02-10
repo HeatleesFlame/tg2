@@ -40,6 +40,7 @@ async def get_photo(message: Message, bot: Bot, state: FSMContext) -> None:
 
 async def send_photos(message: Message, bot: Bot, state: FSMContext) -> None:
     if message.from_user.id == settings.bots.chef_id:
+        await clear_order_table()
         user_data = await state.get_data()
         if not user_data['photos']:
             await message.answer('Вы не отправили ни одного фото')
