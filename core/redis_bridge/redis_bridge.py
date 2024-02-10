@@ -2,7 +2,7 @@ import redis.asyncio as redis
 
 from core.settings import settings
 
-redis_storage = redis.Redis(username=settings.redis.user_name, host='redis')
+redis_storage = redis.Redis(username=settings.redis.user_name, host='localhost')
 
 
 async def del_from_pattern(pattern: str) -> None:

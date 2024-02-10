@@ -6,7 +6,7 @@ class FillMenu(StatesGroup):
 
 
 class SendMenuPhoto(StatesGroup):
-    sending_photo = State()
+    sending_photos = State()
 
 
 class CreateOrder(StatesGroup):

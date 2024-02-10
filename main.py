@@ -9,7 +9,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 from memory_profiler import profile
 
 from core.FSMs.FSM import SendMenuPhoto, CreateOrder
-from core.handlers.admin_handlers import wait_menu_photo, get_menu_photo, get_link_to_spreadsheet
+from core.handlers.admin_handlers import wait_menu_photo, get_link_to_spreadsheet, get_photo, send_photos
 from core.handlers.basic import command_start_handler, create_order, remove_order, non_supported, \
     get_dish, send_order, get_time, ask_drink, get_drink, cancel, complete_dinner, get_wishes
 from core.middleware.md_basic import register_check
@@ -43,7 +43,8 @@ async def start():
     # admin handler registry
     dp.message.register(get_link_to_spreadsheet, F.text == 'Получить ссылку на таблицы')
     dp.message.register(wait_menu_photo, F.text == 'Отправить фото меню')
-    dp.message.register(get_menu_photo, SendMenuPhoto.sending_photo)
+    dp.message.register(send_photos, F.text == 'Отправить')
+    dp.message.register(get_photo, SendMenuPhoto.sending_photos)
 
     # user handler registry
 
