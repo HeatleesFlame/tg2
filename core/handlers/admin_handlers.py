@@ -23,7 +23,7 @@ async def wait_menu_photo(message: Message, bot: Bot, state: FSMContext) -> None
     if message.from_user.id == settings.bots.chef_id:
         await state.set_state(SendMenuPhoto.sending_photos)
         await state.set_data({'photos': []})
-        await message.answer('Отправьте фото меню, когда закончите, еще раз нажмите отправить', reply_markup=send_kb)
+        await message.answer('Отправьте фото меню, когда закончите, еще раз нажмите отправить.\nОтправляйте фото по одному!', reply_markup=send_kb)
     else:
         await message.answer('Ты вроде не админ(')
 
