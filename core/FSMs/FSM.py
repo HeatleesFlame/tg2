@@ -15,3 +15,9 @@ class CreateOrder(StatesGroup):
     choosing_beverage = State()
     sending_order = State()
     write_wishes = State()
+
+
+class Form(StatesGroup):
+    name = State()
+    group = State()
+    phone = State()

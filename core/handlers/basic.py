@@ -1,13 +1,11 @@
 import logging
 import re
-
 from aiogram import Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from aiogram.types import Message
 from aiogram.utils.formatting import Text, Bold
-
-from core.FSMs.FSM import CreateOrder
+from core.FSMs.FSM import CreateOrder, Form
 from core.keyboards.admin_kb import reply_admin_start
 from core.keyboards.user_kb import reply_keyboard_start, choose_time_kb, send_order_kb, menu_kb, beverage_kb, \
     complex_dinner, wishes_kb, user_home, delete_button
@@ -28,9 +26,58 @@ async def command_start_handler(message: Message, bot: Bot) -> None:
         await message.answer(**content.as_kwargs(), reply_markup=reply_keyboard_start)
 
 
+async def command_registration(message: Message, bot: Bot, state: FSMContext) -> None:
+    await message.answer('Укажите фамилию и имя, вот так:\nИванов Иван')
+    await state.set_state(Form.name)
+    user_info = {
+        "tg_id": message.from_user.id,
+        "fullname": '',
+        'group': '',
+        'phone': ''
+    }
+    await state.update_data(user_info=user_info)
+
+
+async def get_name(message: Message, bot: Bot, state: FSMContext) -> None:
+    if re.fullmatch(pattern=r'[А-Я][а-я]+ [А-Я][а-я]+', string=message.text):
+        await message.answer('Будем знакомы! Теперь укажите свой класс:\nНапример, 9В')
+        user_data = await state.get_data()
+        user_data['user_info']['fullname'] = message.text
+        await state.update_data(user_data)
+        await state.set_state(Form.group)
+    else:
+        await message.answer('Не очень-то это и похоже на твое имя и фамилию(')
+
+
+async def get_group(message: Message, bot: Bot, state: FSMContext) -> None:
+    if re.fullmatch(pattern=r'\d+[А-Я]', string=message.text):
+        await message.answer('Отлично, теперь укажи номер телефона\nНапример, вот так: +71234566789')
+        user_data = await state.get_data()
+        user_data['user_info']['group'] = message.text
+        await state.update_data(user_data)
+        await state.set_state(Form.phone)
+    else:
+        await message.answer('Что-то не так, попробуй еще раз')
+
+
+async def get_phone(message: Message, bot: Bot, state: FSMContext) -> None:
+    if re.fullmatch(pattern=r'\+\d{11}', string=message.text):
+        await message.answer(f'Вот и все, теперь можешь делать заказы!', reply_markup=reply_keyboard_start)
+        user_data = await state.get_data()
+        user_data['user_info']['phone'] = message.text
+        await message.answer(f"{user_data['user_info']}")
+        await state.update_data(user_data)
+        # proceed to middleware for Google sheets
+        # make asyncpg query
+        await state.clear()
+    else:
+        await message.answer('Не похоже на номер, попробуй еще раз')
+
+
 async def create_order(message: Message, bot: Bot, state: FSMContext) -> None:
     if await redis_storage.get(f'{message.from_user.id}_order'):
-        await message.answer('У вас уже есть активный заказ, вы сможете сделать новый когда отправят меню', reply_markup=user_home)
+        await message.answer('У вас уже есть активный заказ, вы сможете сделать новый когда отправят меню',
+                             reply_markup=user_home)
     else:
         await state.set_state(CreateOrder.choosing_dishes)
         await message.answer('Нажмите на обед, который хотите заказать', reply_markup=complex_dinner)
@@ -60,7 +107,8 @@ async def complete_dinner(callback: CallbackQuery, state: FSMContext) -> None:
             order['content'] += 'Второе Салат Хлеб '
 
     await state.update_data(order=order)
-    await callback.message.answer('Записал. Выберите напиток, если его нет в клавиатуре, просто напишите', reply_markup=beverage_kb)
+    await callback.message.answer('Записал. Выберите напиток, если его нет в клавиатуре, просто напишите',
+                                  reply_markup=beverage_kb)
     await state.set_state(CreateOrder.choosing_beverage)
 
 
@@ -116,7 +164,8 @@ async def send_order(message: Message, bot: Bot, state: FSMContext) -> None:
     content = user_data['order']['content']
     delivery_time = user_data['order']['delivery_time']
     wishes = user_data['order']['wishes']
-    await message.answer(f'Заказ отправлен:\n{content}\nВремя выдачи:\n{delivery_time}\nПожелания к заказу:\n{wishes}', reply_markup=user_home)
+    await message.answer(f'Заказ отправлен:\n{content}\nВремя выдачи:\n{delivery_time}\nПожелания к заказу:\n{wishes}',
+                         reply_markup=user_home)
     user_data = user_data['order']
     await redis_storage.set(f'{message.from_user.id}_order', '1')
     # build order representation as sheets values
