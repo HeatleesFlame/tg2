@@ -35,10 +35,10 @@ async def create_api(name: str, version: str) -> GoogleAPI:
 
 
 @profile
-async def get_user(
+async def is_user(
         user_id: int) -> bool or None:  # this function may cause performance issues because pulls all users data to ram
     sheets = await create_api(name='sheets', version='v4')
-    async with Aiogoogle(service_account_creds=creds) as aiogoogle:
+    async with Aiogoogle(service_account_creds=creds) as aiogoogle: # noqa
         user = await aiogoogle.as_service_account(
             sheets.spreadsheets.values.get(
                 spreadsheetId=spreadsheet_id,
@@ -54,7 +54,7 @@ async def get_user(
 
 async def list_users():
     sheets = await create_api(name='sheets', version='v4')
-    async with Aiogoogle(service_account_creds=creds) as aiogoogle:
+    async with Aiogoogle(service_account_creds=creds) as aiogoogle: # noqa
         users_list = await aiogoogle.as_service_account(sheets.spreadsheets.values.get(
             spreadsheetId=spreadsheet_id,
             range='users!A2:A',
@@ -73,7 +73,7 @@ async def list_users():
 async def commit_order(order: List[List[str]]) -> None:
     sheets = await create_api(name='sheets', version='v4')
     order[0].append('=TODAY()')
-    async with Aiogoogle(service_account_creds=creds) as aiogoogle:
+    async with Aiogoogle(service_account_creds=creds) as aiogoogle: # noqa
         response = await aiogoogle.as_service_account(sheets.spreadsheets.values.append(
             spreadsheetId=spreadsheet_id,
             range='orders!A2:E',
