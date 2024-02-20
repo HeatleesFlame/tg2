@@ -27,6 +27,13 @@ class Redis:
 
 
 @dataclass
+class Postgres:
+    postgres_passwd: str
+    postgres_user: str
+    db_name: str
+
+
+@dataclass
 class GoogleApi:
     spreadsheet_id: str
 
@@ -36,6 +43,7 @@ class Settings:
     bots: Bots
     redis: Redis
     google_api: GoogleApi
+    postgres: postgres
 
 
 def get_settings(path: str):
@@ -49,11 +57,16 @@ def get_settings(path: str):
         ),
         redis=Redis(
             user_name=env.str('REDIS_USER'),  # configure redis client later
-            passwd=env.str('REDIS_PASSWD'),
+            passwd=env.str('REDIS_PASSWORD'),
             addr=env.str('REDIS_ADDR')
         ),
         google_api=GoogleApi(
             spreadsheet_id=env.str('SPREADSHEET_ID')
+        ),
+        postgres=Postgres(
+            postgres_user=env.str('POSTGRES_USER'),
+            postgres_passwd=env.str('POSTGRES_PASSWORD'),
+            db_name=env.str('DB_NAME')
         )
     )
 
