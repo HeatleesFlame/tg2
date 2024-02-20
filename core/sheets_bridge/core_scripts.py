@@ -1,13 +1,18 @@
 import json
 import logging
+import os.path
 from typing import List
 from memory_profiler import profile
 from aiogoogle import Aiogoogle, GoogleAPI
 from aiogoogle.auth.creds import ServiceAccountCreds
 from core.settings import settings
 
-service_account_key = json.load(
-    open(r'test_service_account.json'))  # no abs path in production fix this
+if os.path.exists('test_service_account.json'):
+    service_account_key = json.load(
+            open(r'test_service_account.json'))
+else:
+    service_account_key = json.load(
+        open(r'../../test_service_account.json'))
 
 creds = ServiceAccountCreds(
     scopes=[
@@ -35,8 +40,7 @@ async def create_api(name: str, version: str) -> GoogleAPI:
 
 
 @profile
-async def is_user(
-        user_id: int) -> bool or None:  # this function may cause performance issues because pulls all users data to ram
+async def is_user(user_id: int) -> bool or None:  # this function may cause performance issues because pulls all users data to ram
     sheets = await create_api(name='sheets', version='v4')
     async with Aiogoogle(service_account_creds=creds) as aiogoogle: # noqa
         user = await aiogoogle.as_service_account(
@@ -96,13 +100,16 @@ async def commit_order(order: List[List[str]]) -> None:
 async def clear_order_table() -> None:
     sheets = await create_api(name='sheets', version='v4')
     async with Aiogoogle(service_account_creds=creds) as aiogoogle:
-        values = await aiogoogle.as_service_account(
+        response = await aiogoogle.as_service_account(
             sheets.spreadsheets.values.get(
                 spreadsheetId=spreadsheet_id,
                 range="orders!A2:E",
                 majorDimension="ROWS")
         )
-        values = values['values']
+        if 'values' in response.keys():
+            values = response['values']
+        else:
+            return
         await aiogoogle.as_service_account(
             sheets.spreadsheets.values.append(
                 spreadsheetId=spreadsheet_id,
