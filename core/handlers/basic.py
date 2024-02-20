@@ -1,5 +1,6 @@
 import logging
 import re
+from aiogram.types import ReplyKeyboardRemove
 from aiogram import Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
@@ -9,6 +10,7 @@ from core.FSMs.FSM import CreateOrder, Form
 from core.keyboards.admin_kb import reply_admin_start
 from core.keyboards.user_kb import reply_keyboard_start, choose_time_kb, send_order_kb, menu_kb, beverage_kb, \
     complex_dinner, wishes_kb, user_home, delete_button
+from core.postgres.query import postgres
 from core.redis_bridge.redis_bridge import redis_storage
 from core.settings import settings
 from core.sheets_bridge.core_scripts import commit_order
@@ -27,15 +29,18 @@ async def command_start_handler(message: Message, bot: Bot) -> None:
 
 
 async def command_registration(message: Message, bot: Bot, state: FSMContext) -> None:
-    await message.answer('Укажите фамилию и имя, вот так:\nИванов Иван')
-    await state.set_state(Form.name)
-    user_info = {
-        "tg_id": message.from_user.id,
-        "fullname": '',
-        'group': '',
-        'phone': ''
-    }
-    await state.update_data(user_info=user_info)
+    if not await postgres.check_user(message.from_user.id):
+        await message.answer('Укажите фамилию и имя, вот так:\nИванов Иван', reply_markup=ReplyKeyboardRemove())
+        await state.set_state(Form.name)
+        user_info = {
+            "tg_id": message.from_user.id,
+            "fullname": '',
+            'group': '',
+            'phone': ''
+        }
+        await state.update_data(user_info=user_info)
+    else:
+        await message.answer('Вы уже зарегистрированы, спасибо!')
 
 
 async def get_name(message: Message, bot: Bot, state: FSMContext) -> None:
@@ -60,15 +65,14 @@ async def get_group(message: Message, bot: Bot, state: FSMContext) -> None:
         await message.answer('Что-то не так, попробуй еще раз')
 
 
-async def get_phone(message: Message, bot: Bot, state: FSMContext) -> None:
+async def get_phone_end_reg(message: Message, bot: Bot, state: FSMContext) -> None:
     if re.fullmatch(pattern=r'\+\d{11}', string=message.text):
         await message.answer(f'Вот и все, теперь можешь делать заказы!', reply_markup=reply_keyboard_start)
         user_data = await state.get_data()
         user_data['user_info']['phone'] = message.text
-        await message.answer(f"{user_data['user_info']}")
         await state.update_data(user_data)
         # proceed to middleware for Google sheets
-        # make asyncpg query
+        await postgres.add_user(user_data['user_info'])
         await state.clear()
     else:
         await message.answer('Не похоже на номер, попробуй еще раз')
@@ -186,16 +190,13 @@ async def remove_order(message: Message, bot: Bot, state: FSMContext) -> None:
     pass
 
 
-# async def order_delivered(message: Message, bot: Bot) -> None:
-#     """Обновляет статус заказа и завершает его"""
-#     # function not used in current version but kept for pay from credit card
-#     pass
-
-
 async def cancel(message: Message, bot: Bot, state: FSMContext) -> None:
     current_state = await state.get_state()
     if current_state is None:
         await message.answer('Нечего отменять')
+        return
+    if current_state in Form.__states__:
+        await message.answer('Закончи регистрацию!')
         return
     else:
         logging.info('Action has cancelled ')
