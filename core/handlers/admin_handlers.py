@@ -2,7 +2,7 @@ from aiogram import Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from aiogram.types import InputMediaPhoto
-
+from core.postgres.query import postgres
 from core.keyboards.admin_kb import send_kb, reply_admin_start
 from core.keyboards.user_kb import reply_keyboard_start
 from core.redis_bridge.redis_bridge import del_from_pattern
@@ -42,16 +42,20 @@ async def send_photos(message: Message, bot: Bot, state: FSMContext) -> None:
     if message.from_user.id == settings.bots.chef_id:
         await clear_order_table()
         user_data = await state.get_data()
+
         if not user_data['photos']:
             await message.answer('Вы не отправили ни одного фото')
             return
+
         await message.answer('Фото будут отправлены пользователям', reply_markup=reply_admin_start)
         await state.clear()
         media_group = []
+
         for photo in user_data['photos']:
             media_group.append(InputMediaPhoto(media=photo))
-        for user in await list_users():
-            if int(user) != settings.bots.chef_id:
+
+        async for user in postgres.list_users():
+            if user != settings.bots.chef_id:
                 await bot.send_media_group(chat_id=user, media=media_group)
                 await bot.send_message(text='Теперь можно сделать заказ', reply_markup=reply_keyboard_start, chat_id=user)
 
