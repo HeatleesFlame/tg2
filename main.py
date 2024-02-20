@@ -12,7 +12,7 @@ from core.FSMs.FSM import SendMenuPhoto, CreateOrder, Form
 from core.handlers.admin_handlers import wait_menu_photo, get_link_to_spreadsheet, get_photo, send_photos
 from core.handlers.basic import command_start_handler, create_order, remove_order, non_supported, \
     get_dish, send_order, get_time, ask_drink, get_drink, cancel, complete_dinner, get_wishes, command_registration, \
-    get_name, get_group, get_phone
+    get_name, get_group, get_phone_end_reg
 from core.middleware.md_basic import register_check
 from core.redis_bridge.redis_bridge import redis_storage
 from core.settings import settings
@@ -30,7 +30,9 @@ async def stop_bot(bot: Bot) -> None:
 @profile
 async def start():
     logging.basicConfig(level=logging.INFO)
+    # redis init
     storage = RedisStorage(redis=redis_storage)
+    # bot instance init
     bot = Bot(settings.bots.bot_token, parse_mode=ParseMode.HTML)
     dp = Dispatcher(storage=storage)
     await set_commands(bot)
@@ -39,7 +41,6 @@ async def start():
     # dp.startup.register(start_bot)
     # dp.shutdown.register(stop_bot)
 
-    dp.message.register(command_start_handler, Command(commands=['start']))
     dp.message.register(cancel, Command(commands=['cancel']), any_state)
     # admin handler registry
     dp.message.register(get_link_to_spreadsheet, F.text == 'Получить ссылку на таблицы')
@@ -51,7 +52,8 @@ async def start():
     dp.message.register(command_registration, Command(commands=['registration']))
     dp.message.register(get_name, Form.name)
     dp.message.register(get_group, Form.group)
-    dp.message.register(get_phone, Form.phone)
+    dp.message.register(get_phone_end_reg, Form.phone)
+    dp.message.register(command_start_handler, Command(commands=['start']))
     dp.message.register(create_order, F.text == 'Сделать заказ')
     dp.callback_query.register(complete_dinner, F.data.startswith('complex'))
     dp.message.register(ask_drink, F.text == 'Выбрать напиток', CreateOrder.choosing_dishes)
