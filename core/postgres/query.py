@@ -1,10 +1,10 @@
-import asyncio
-from typing import Iterable, Iterator
+from typing import Iterator
 
 import asyncpg
 
 from core.settings import settings
-connection_str = f'postgresql://{settings.postgres.postgres_user}:{settings.postgres.postgres_passwd}@localhost/{settings.postgres.db_name}'
+
+connection_str = f'postgresql://{settings.postgres.postgres_user}:{settings.postgres.postgres_passwd}@postgres/{settings.postgres.postgres_db}'
 
 
 class PostgresQuery:
@@ -37,10 +37,7 @@ class PostgresQuery:
             await self.create_pool()
         async with self._pool.acquire() as conn:
             user = await conn.fetchval("SELECT tg_id FROM users where tg_id = $1 ", tg_id)
-            if user:
-                return True
-            else:
-                return False
+            return True if user else False
 
     async def list_users(self) -> Iterator[int]:
         if not self._pool:

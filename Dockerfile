@@ -1,16 +1,20 @@
 # syntax=docker/dockerfile:1
+FROM python:3.10-slim-bullseye as production
+LABEL maintainer="Daniil Palona2006@yandex.ru>" \
+      description="Telegram Bot"
 
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
+ENV PYTHONPATH "${PYTHONPATH}:/app"
+ENV PATH "/app/scripts:${PATH}"
 
-# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
-FROM python:3.10
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-WORKDIR /app
-COPY . .
-RUN pip install -r requirements.txt
-RUN chmod -R 777 ./
 EXPOSE 80
+WORKDIR /app
 
+
+# Add code & install dependencies
+COPY requirements.txt /app/
+RUN pip install -r requirements.txt
+
+ADD . /app/
+
+
+CMD ["python3", "main.py"]

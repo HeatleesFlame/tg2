@@ -21,16 +21,15 @@ class Bots:
 
 @dataclass
 class Redis:
-    user_name: str
-    passwd: str
-    addr: str
+    host: str
+    port: int
 
 
 @dataclass
 class Postgres:
     postgres_passwd: str
     postgres_user: str
-    db_name: str
+    postgres_db: str
 
 
 @dataclass
@@ -56,9 +55,8 @@ def get_settings(path: str):
             chef_id=env.int('CHEF_ID')
         ),
         redis=Redis(
-            user_name=env.str('REDIS_USER'),  # configure redis client later
-            passwd=env.str('REDIS_PASSWORD'),
-            addr=env.str('REDIS_ADDR')
+            host=env.str('REDIS_HOST'),
+            port=env.int('REDIS_PORT')
         ),
         google_api=GoogleApi(
             spreadsheet_id=env.str('SPREADSHEET_ID')
@@ -66,7 +64,7 @@ def get_settings(path: str):
         postgres=Postgres(
             postgres_user=env.str('POSTGRES_USER'),
             postgres_passwd=env.str('POSTGRES_PASSWORD'),
-            db_name=env.str('DB_NAME')
+            postgres_db=env.str('POSTGRES_DB')
         )
     )
 

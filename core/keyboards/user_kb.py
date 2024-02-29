@@ -5,7 +5,7 @@
 
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
-reply_keyboard_start = ReplyKeyboardMarkup(keyboard=[
+USER_START = ReplyKeyboardMarkup(keyboard=[
     [
         KeyboardButton(
             text='Сделать заказ'
@@ -15,7 +15,7 @@ reply_keyboard_start = ReplyKeyboardMarkup(keyboard=[
     input_field_placeholder='Выбери кнопку'
 )
 
-user_home = ReplyKeyboardMarkup(keyboard=[
+USER_HOME = ReplyKeyboardMarkup(keyboard=[
     [
         KeyboardButton(
             text='Отменить заказ'
@@ -25,7 +25,7 @@ user_home = ReplyKeyboardMarkup(keyboard=[
     input_field_placeholder='Выбери кнопку'
 )
 
-choose_time_kb = ReplyKeyboardMarkup(keyboard=[
+DELIVERY_TIME = ReplyKeyboardMarkup(keyboard=[
     [
         KeyboardButton(text='13:35'),
         KeyboardButton(text='11:50'),
@@ -33,13 +33,13 @@ choose_time_kb = ReplyKeyboardMarkup(keyboard=[
 ], one_time_keyboard=True
 )
 
-send_order_kb = ReplyKeyboardMarkup(keyboard=[
+SEND_ORDER = ReplyKeyboardMarkup(keyboard=[
     [
         KeyboardButton(text='Отправить заказ')
     ]
 ])
 
-menu_kb = ReplyKeyboardMarkup(keyboard=[
+MENU = ReplyKeyboardMarkup(keyboard=[
     [
         KeyboardButton(text='Суп'),
         KeyboardButton(text='Второе'),
@@ -52,7 +52,7 @@ menu_kb = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True
 )
 
-beverage_kb = ReplyKeyboardMarkup(keyboard=[
+DRINKS = ReplyKeyboardMarkup(keyboard=[
     [
         KeyboardButton(text='Чай'),
         KeyboardButton(text='Морс'),
@@ -62,12 +62,12 @@ beverage_kb = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True
 )
 
-wishes_kb = ReplyKeyboardMarkup(keyboard=[[
+ASK_WISHES = ReplyKeyboardMarkup(keyboard=[[
     KeyboardButton(text='Нет, спасибо!')
 ]], resize_keyboard=True
 )
 
-complex_dinner = InlineKeyboardMarkup(inline_keyboard=[
+LUNCH = InlineKeyboardMarkup(inline_keyboard=[
     [
         InlineKeyboardButton(
             text='Комплексный обед 1',
@@ -85,14 +85,3 @@ complex_dinner = InlineKeyboardMarkup(inline_keyboard=[
 
 ]
 )
-
-
-async def delete_button(keyboard: ReplyKeyboardMarkup, already_pressed: str) -> ReplyKeyboardMarkup:
-    new_markup = keyboard
-    already_pressed = already_pressed.split(' ')
-    for text in already_pressed:
-        try:
-            new_markup.keyboard[0].remove(KeyboardButton(text=text))
-        except ValueError:
-            pass
-    return new_markup

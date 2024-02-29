@@ -1,7 +1,7 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 
-reply_admin_start = ReplyKeyboardMarkup(keyboard=[
+ADMIN_START = ReplyKeyboardMarkup(keyboard=[
     [
         KeyboardButton(
             text='Отправить фото меню'
@@ -12,6 +12,6 @@ reply_admin_start = ReplyKeyboardMarkup(keyboard=[
     ]], resize_keyboard=True,
         one_time_keyboard=True
 )
-send_kb = ReplyKeyboardMarkup(keyboard=[[
+SEND_MENU = ReplyKeyboardMarkup(keyboard=[[
     KeyboardButton(text='Отправить')
 ]])

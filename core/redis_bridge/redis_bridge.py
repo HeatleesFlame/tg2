@@ -2,8 +2,8 @@ import redis.asyncio as redis
 from redis.asyncio import Redis
 
 from core.settings import settings
-
-redis_storage: Redis = redis.Redis(username=settings.redis.user_name, host='localhost')
+# we create environment variable because redis aliased as redis in prod compose file
+redis_storage: Redis = redis.Redis(host=settings.redis.host, port=settings.redis.port)
 
 
 async def del_from_pattern(pattern: str) -> None:
