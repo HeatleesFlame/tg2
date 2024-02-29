@@ -1,2 +1,3 @@
 /.env
 /logs.log
+/test_service_account.json
