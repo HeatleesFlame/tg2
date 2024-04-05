@@ -1,6 +1,8 @@
 import logging
 import re
-from aiogram.types import ReplyKeyboardRemove
+
+from datetime import datetime
+from aiogram.types import ReplyKeyboardRemove, Message
 from aiogram import Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
@@ -84,24 +86,28 @@ async def get_phone_end_reg(message: Message, bot: Bot, state: FSMContext) -> No
         await message.answer('Не похоже на номер, попробуй еще раз')
 
 
-async def create_order(message: Message, bot: Bot, state: FSMContext) -> None:
+async def create_order(message: Message, bot: Bot, state: FSMContext) -> Message:
+    # check for existing orders
     if await redis_storage.get(f'{message.from_user.id}_order'):
-        await message.answer('У вас уже есть активный заказ, вы сможете сделать новый когда отправят меню',
-                             reply_markup=USER_HOME)
-    else:
-        await state.set_state(CreateOrder.choosing_dishes)
-        await message.answer('Нажмите на обед, который хотите заказать', reply_markup=LUNCH)
-        await message.answer('Также вы можете собрать обед самостоятельно', reply_markup=MENU)
-        await state.set_data(
-            {
-                'order': {
-                    'customer': str(message.from_user.id),
-                    'content': '',
-                    'delivery_time': '',
-                    'wishes': ''
-                }
+        return await message.answer('У вас уже есть активный заказ, вы сможете сделать новый когда отправят меню',
+                                    reply_markup=USER_HOME)
+    # check creation time
+    if 9 < datetime.now(tz=settings.timezone).hour < 16:
+        return await message.answer(text='Бот не принимает заказ, спроси в беседе, возможно порции еще остались')
+    # create order
+    await state.set_state(CreateOrder.choosing_dishes)
+    await message.answer('Нажмите на обед, который хотите заказать', reply_markup=LUNCH)
+    await message.answer('Также вы можете собрать обед самостоятельно', reply_markup=MENU)
+    await state.set_data(
+        {
+            'order': {
+                'customer': str(message.from_user.id),
+                'content': '',
+                'delivery_time': '',
+                'wishes': ''
             }
-        )
+        }
+    )
 
 
 async def complete_dinner(callback: CallbackQuery, state: FSMContext) -> None:

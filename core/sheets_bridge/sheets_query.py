@@ -1,6 +1,6 @@
 import json
 import os.path
-
+from datetime import datetime
 from aiogoogle import Aiogoogle
 from aiogoogle.auth.creds import ServiceAccountCreds
 
@@ -68,7 +68,8 @@ class GoogleSheets:
         if not self.sheets:
             await self._create_api()
         order = [[values for values in order.values()]]
-        order[0].append('=TODAY()')
+        t = datetime.now()
+        order[0].append(f'=DATE({t.year}, {t.month}, {t.day + 1})')
         order[0][2] = '=TIME({0};{1};00)'.format(*order[0][2].split(':'))
 
         async with self.aiogoogle as aiogoogle:  # noqa

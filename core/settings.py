@@ -10,12 +10,12 @@ from __future__ import annotations
 from environs import Env
 from dataclasses import dataclass
 import os
+from datetime import timezone, timedelta
 
 
 @dataclass
 class Bots:
     bot_token: str
-    admin_id: int
     chef_id: int
 
 
@@ -43,6 +43,7 @@ class Settings:
     redis: Redis
     google_api: GoogleApi
     postgres: postgres
+    timezone: timezone
 
 
 def get_settings(path: str):
@@ -51,7 +52,6 @@ def get_settings(path: str):
     return Settings(
         bots=Bots(
             bot_token=env.str('BOT_TOKEN'),
-            admin_id=env.int('ADMIN_ID'),
             chef_id=env.int('CHEF_ID')
         ),
         redis=Redis(
@@ -65,6 +65,10 @@ def get_settings(path: str):
             postgres_user=env.str('POSTGRES_USER'),
             postgres_passwd=env.str('POSTGRES_PASSWORD'),
             postgres_db=env.str('POSTGRES_DB')
+        ),
+        timezone=timezone(offset=timedelta(
+            hours=env.int('TIMEZONE')
+            )
         )
     )
 
