@@ -4,6 +4,8 @@ from datetime import datetime
 from aiogoogle import Aiogoogle
 from aiogoogle.auth.creds import ServiceAccountCreds
 
+from core.settings import settings
+
 
 class GoogleSheets:
     def __init__(self, spreadsheet_id: str):
@@ -68,8 +70,13 @@ class GoogleSheets:
         if not self.sheets:
             await self._create_api()
         order = [[values for values in order.values()]]
-        t = datetime.now()
-        order[0].append(f'=DATE({t.year}, {t.month}, {t.day + 1})')
+        #  create delivery date
+        t = datetime.now(settings.timezone)
+        if t.hour > 16:
+            order[0].append(f'=DATE({t.year}, {t.month}, {t.day + 1})')
+        else:
+            order[0].append(f'=DATE({t.year}, {t.month}, {t.day})')
+        # format time for sheets
         order[0][2] = '=TIME({0};{1};00)'.format(*order[0][2].split(':'))
 
         async with self.aiogoogle as aiogoogle:  # noqa

@@ -30,6 +30,8 @@ class Postgres:
     postgres_passwd: str
     postgres_user: str
     postgres_db: str
+    postgres_host: str
+    postgres_port: int
 
 
 @dataclass
@@ -64,7 +66,9 @@ def get_settings(path: str):
         postgres=Postgres(
             postgres_user=env.str('POSTGRES_USER'),
             postgres_passwd=env.str('POSTGRES_PASSWORD'),
-            postgres_db=env.str('POSTGRES_DB')
+            postgres_db=env.str('POSTGRES_DB'),
+            postgres_host=env.str('POSTGRES_HOST'),
+            postgres_port=env.int('POSTGRES_PORT')
         ),
         timezone=timezone(offset=timedelta(
             hours=env.int('TIMEZONE')
